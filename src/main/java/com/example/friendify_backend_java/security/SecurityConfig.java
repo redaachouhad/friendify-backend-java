@@ -52,6 +52,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) {
 
         http
+                .cors(cors->{})
                 // Disable CSRF because we are using JWT (stateless API)
                 // CSRF protection is mainly needed for session-based authentication
                 .csrf(AbstractHttpConfigurer::disable)

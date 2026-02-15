@@ -5,13 +5,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.Getter;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDate;
 
 @Data
 public class RegisterUserRequest {
 
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
-    private String username;
+    private String pseudonym;
 
     @NotBlank(message = "First name is required")
     @JsonProperty("first_name")
@@ -34,5 +37,9 @@ public class RegisterUserRequest {
 
     @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Phone number is invalid")
     private String phone; // optional
+
+    @JsonProperty("birth_date")
+    private LocalDate birthDate;
+
 
 }

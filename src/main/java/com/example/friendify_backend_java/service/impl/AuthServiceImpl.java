@@ -7,6 +7,8 @@ import com.example.friendify_backend_java.exception.BusinessException;
 import com.example.friendify_backend_java.repository.UserRepository;
 import com.example.friendify_backend_java.security.JwtUtil;
 import com.example.friendify_backend_java.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,7 +40,6 @@ public class AuthServiceImpl implements AuthService {
                     "Email already exists",
                     HttpStatus.CONFLICT
             );
-
         }
 
         // creating the new user
@@ -46,9 +47,11 @@ public class AuthServiceImpl implements AuthService {
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
                 .email(user.getEmail())
+                .pseudonym(user.getPseudonym())
                 .password(passwordEncoder.encode(user.getPassword()))
                 .gender(user.getGender())
                 .phone(user.getPhone())
+                .birthDate(user.getBirthDate())
                 .isActive(true)
                 .build();
 
@@ -57,9 +60,13 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String login(LoginUserRequest userRequest) {
+    public String login(
+            LoginUserRequest userRequest,
+            HttpServletResponse response
+    ) {
 
         try {
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             userRequest.getEmail(),
@@ -74,7 +81,17 @@ public class AuthServiceImpl implements AuthService {
             }
 
             // Generate JWT token
-            return jwtUtil.generateToken(user);
+            String jwt = jwtUtil.generateToken(user);
+
+            // Create HTTP-only cookie
+            Cookie cookie = new Cookie("token", jwt);
+            cookie.setHttpOnly(true);           // Prevents JS access
+            // cookie.setSecure(true);          // Enable in production (HTTPS only)
+            cookie.setPath("/");                 // Available for entire domain
+            cookie.setMaxAge(60 * 60);          // 1 hour
+            response.addCookie(cookie);
+
+            return jwt;
 
         } catch (Exception ex) {
             // Any authentication failure will bubble up here
