@@ -2,6 +2,8 @@ package com.example.friendify_backend_java.controller;
 
 import com.example.friendify_backend_java.dto.LoginUserRequest;
 import com.example.friendify_backend_java.dto.RegisterUserRequest;
+import com.example.friendify_backend_java.dto.UserResponse;
+import com.example.friendify_backend_java.entity.User;
 import com.example.friendify_backend_java.service.impl.AuthServiceImpl;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,11 +25,6 @@ public class AuthController {
         this.authServiceImpl = authServiceImpl;
     }
 
-    /**
-     * Register Api
-     * @param user
-     * @return
-     */
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(
@@ -43,19 +40,22 @@ public class AuthController {
                 );
     }
 
-    /**
-     * Login Api
-     * @param userRequest
-     * @param response
-     * @return
-     */
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(
             @RequestBody @Valid LoginUserRequest userRequest,
             HttpServletResponse response
     ) {
         // 1. Authenticate and generate JWT
-        String jwt = authServiceImpl.login(userRequest, response);
+        String jwt = authServiceImpl.login(userRequest);
+
+
+        // 2. Create HTTP-only cookie
+        Cookie cookie = new Cookie("token", jwt);
+        cookie.setHttpOnly(true);           // Prevents JS access
+        // cookie.setSecure(true);          // Enable in production (HTTPS only)
+        cookie.setPath("/");                 // Available for entire domain
+        cookie.setMaxAge(86400);          // 1 hour
+        response.addCookie(cookie);
 
         // 2. Return success response
         return ResponseEntity.ok(Map.of(
@@ -67,7 +67,25 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication){
-        return ResponseEntity.ok(authentication.getPrincipal());
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Cast the principal to your User entity
+        User user = (User) authentication.getPrincipal();
+
+        // Map only the data you want to send to the frontend
+        UserResponse response = new UserResponse(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getPseudonym(),
+                user.getEmail(),
+                user.getGender()
+        );
+
+        return ResponseEntity.ok(response);
     }
+
 
 }

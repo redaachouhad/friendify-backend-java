@@ -3,6 +3,7 @@ package com.example.friendify_backend_java.service.impl;
 import com.example.friendify_backend_java.dto.LoginUserRequest;
 import com.example.friendify_backend_java.dto.RegisterUserRequest;
 import com.example.friendify_backend_java.entity.User;
+import com.example.friendify_backend_java.enums.ErrorCode;
 import com.example.friendify_backend_java.exception.BusinessException;
 import com.example.friendify_backend_java.repository.UserRepository;
 import com.example.friendify_backend_java.security.JwtUtil;
@@ -37,8 +38,9 @@ public class AuthServiceImpl implements AuthService {
         // verify the uniqueness of email
         if(userRepository.existsByEmail(user.getEmail())){
             throw new BusinessException(
-                    "Email already exists",
-                    HttpStatus.CONFLICT
+                    ErrorCode.CONFLICT_ERROR,
+                    HttpStatus.CONFLICT,
+                    "Email already exists"
             );
         }
 
@@ -60,43 +62,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String login(
-            LoginUserRequest userRequest,
-            HttpServletResponse response
-    ) {
+    public String login(LoginUserRequest userRequest) {
 
-        try {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        userRequest.getEmail(),
+                        userRequest.getPassword()
+                )
+        );
 
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            userRequest.getEmail(),
-                            userRequest.getPassword()
-                    )
-            );
+        User user = (User) authentication.getPrincipal(); // cast is safe if using UserDetailsService
 
-            // getPrincipal is guaranteed to be non-null if authentication succeeds
-            Object principal = authentication.getPrincipal();
-            if (!(principal instanceof User user)) {
-                throw new BusinessException("Invalid user details", HttpStatus.UNAUTHORIZED);
-            }
-
-            // Generate JWT token
-            String jwt = jwtUtil.generateToken(user);
-
-            // Create HTTP-only cookie
-            Cookie cookie = new Cookie("token", jwt);
-            cookie.setHttpOnly(true);           // Prevents JS access
-            // cookie.setSecure(true);          // Enable in production (HTTPS only)
-            cookie.setPath("/");                 // Available for entire domain
-            cookie.setMaxAge(60 * 60);          // 1 hour
-            response.addCookie(cookie);
-
-            return jwt;
-
-        } catch (Exception ex) {
-            // Any authentication failure will bubble up here
-            // Let the global exception handler deal with it
-            throw new BusinessException("Invalid email or password", HttpStatus.UNAUTHORIZED);
-        }
+        return jwtUtil.generateToken(user);
     }
+
 }
