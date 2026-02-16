@@ -4,15 +4,20 @@ import com.example.friendify_backend_java.dto.LoginUserRequest;
 import com.example.friendify_backend_java.dto.RegisterUserRequest;
 import com.example.friendify_backend_java.dto.UserResponse;
 import com.example.friendify_backend_java.entity.User;
+import com.example.friendify_backend_java.enums.ErrorCode;
+import com.example.friendify_backend_java.exception.ErrorResponse;
 import com.example.friendify_backend_java.service.impl.AuthServiceImpl;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
@@ -48,7 +53,6 @@ public class AuthController {
         // 1. Authenticate and generate JWT
         String jwt = authServiceImpl.login(userRequest);
 
-
         // 2. Create HTTP-only cookie
         Cookie cookie = new Cookie("token", jwt);
         cookie.setHttpOnly(true);           // Prevents JS access
@@ -57,12 +61,16 @@ public class AuthController {
         cookie.setMaxAge(86400);          // 1 hour
         response.addCookie(cookie);
 
-        // 2. Return success response
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Login successful",
-                "jwt", jwt
-        ));
+        // 3. Return success response
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(
+                        Map.of(
+                                "success", true,
+                                "message", "Login successful",
+                                "jwt", jwt
+                        )
+                );
+
     }
 
     @GetMapping("/me")

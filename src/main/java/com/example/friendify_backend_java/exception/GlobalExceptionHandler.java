@@ -7,6 +7,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -55,37 +57,6 @@ public class GlobalExceptionHandler {
     }
 
     // ===============================
-    // JSON PARSE / ENUM ERRORS
-    // ===============================
-//    @ExceptionHandler(HttpMessageNotReadableException.class)
-//    public ResponseEntity<ErrorResponse> handleJsonParse(
-//            HttpMessageNotReadableException ex
-//    ) {
-//
-//        Map<String, String> errors = new HashMap<>();
-//
-//        if(ex.getCause() instanceof InvalidFormatException invalidFormatEx){
-//            String fieldName = invalidFormatEx.getPath().getFirst().getPropertyName();
-//            if ("gender".equals(fieldName)) {
-//                errors.put("gender", "Please select a gender");
-//            }
-//        }
-//
-//
-//        log.warn("Invalid request format", ex);
-//
-//        ErrorResponse response = new ErrorResponse(
-//                HttpStatus.BAD_REQUEST.value(),
-//                "Invalid request format",
-//                ErrorCode.INVALID_REQUEST_FORMAT,
-//                errors,
-//                LocalDateTime.now()
-//        );
-//
-//        return ResponseEntity.badRequest().body(response);
-//    }
-
-    // ===============================
     // BUSINESS EXCEPTIONS
     // ===============================
     @ExceptionHandler(BusinessException.class)
@@ -126,6 +97,27 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
+
+    // ===============================
+    // BadCredential Exception
+    // ===============================
+    @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
+    public ResponseEntity<ErrorResponse> handleAuthenticationExceptions(RuntimeException ex) {
+        Map<String, String> errors = new HashMap<>();
+        errors.put("authError", "Invalid email or password");
+
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.UNAUTHORIZED.value(),
+                "Invalid email or password",
+                ErrorCode.INVALID_CREDENTIALS,
+                errors,
+                LocalDateTime.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+
+
 
     // ===============================
     // GLOBAL FALLBACK

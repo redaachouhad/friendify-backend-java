@@ -39,7 +39,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         // 2. Fallback: Try to get token from Cookie
         else if (request.getCookies() != null) {
             for (Cookie cookie : request.getCookies()) {
-                if ("jwt".equals(cookie.getName())) {
+                if ("token".equals(cookie.getName())) {
                     token = cookie.getValue();
                     break;
                 }

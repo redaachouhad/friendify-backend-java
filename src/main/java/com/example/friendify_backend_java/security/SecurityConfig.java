@@ -26,6 +26,9 @@ public class SecurityConfig {
     // Custom JWT filter that validates token on each request
     private final JwtRequestFilter jwtRequestFilter;
 
+    // JwtAuthenticationEntryPoint: handle all authentication errors (401)
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
     /**
      * PasswordEncoder bean.
      * BCrypt is used to hash user passwords before storing them in the database.
@@ -79,7 +82,10 @@ public class SecurityConfig {
                 // Each request must carry its own JWT token
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
+                )
+                // Handle authentication errors (invalid token, missing token, bad credentials)
+                .exceptionHandling(ex->ex.authenticationEntryPoint(jwtAuthenticationEntryPoint))
+        ;
 
         // Add our custom JWT filter before the default authentication filter
         // This ensures JWT validation happens before Spring processes authentication
